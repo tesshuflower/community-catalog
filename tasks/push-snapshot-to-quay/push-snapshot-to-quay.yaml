@@ -130,6 +130,9 @@ spec:
             --argjson d "$(jq '.defaults.tags//[]' <<< "$RP_DATA")" \
             --argjson t "$(jq '.tags//[]' <<< "$COMPONENT_DESTINATION")" \
             '$d+$t|unique')
+
+
+          IFS=$'\n'
           for tag in $(jq -r '.[]' <<< "$all_tags"); do
             # Basic templating
             tag="${tag//\{\{ git_short_sha \}\}/${git_sha:0:7}}"
