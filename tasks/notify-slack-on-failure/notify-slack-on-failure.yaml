@@ -13,6 +13,10 @@ spec:
       description: Name of key within secret which contains webhook URL
     - name: release
       description: Namespaced name of release - should be in format "namespace/name"
+    - name: conditionType
+      type: string
+      description: The Release status condition type to examine to determine if the release failed
+      default: ManagedPipelineProcessed
   volumes:
     - name: slack-token
       secret:
@@ -28,6 +32,8 @@ spec:
       env:
         - name: KEYNAME
           value: $(params.secretKeyName)
+        - name: CONDITIONTYPE
+          value: $(params.conditionType)
       script: |
         #!/usr/bin/env bash
         set -eux
@@ -50,19 +56,20 @@ spec:
           exit 1
         fi
 
-        # check for release status and check if a managed pipeline failed
+        # check for release status and check if the specified condition failed
+        # (default is to look at the ManagedPipelineProcessed condition for failure)
         IFS='/' read -r RELEASE_NAMESPACE RELEASE_NAME <<< "$(params.release)"
         RELEASECONDITIONS=$(kubectl get release "$RELEASE_NAME" -n "$RELEASE_NAMESPACE" \
-          -o jsonpath='{.status.conditions}' | jq '.[] | select(.type == "ManagedPipelineProcessed")')
-        
+          -o jsonpath='{.status.conditions}' | jq ".[] | select(.type == \"$CONDITIONTYPE\")")
+
         RELEASESTATUS=$(jq -r '.reason' <<< "$RELEASECONDITIONS")
 
         if [[ "$RELEASESTATUS" == *"Failed"* ]]; then
           MESSAGE=$(jq -r '.message' <<< "$RELEASECONDITIONS" | awk NF)
-          
+
           # need 3 back-ticks around message for code-block
-          MESSAGE=$(echo -n "Managed pipelines failed: \`\`\`$MESSAGE\`\`\`" | jq -Rsa)
-          
+          MESSAGE=$(echo -n "Release $RELEASE_NAMESPACE/$RELEASE_NAME failed - condition $CONDITIONTYPE: \`\`\`$MESSAGE\`\`\`" | jq -Rsa)
+
           cat > /tmp/payload.json << EOF
         {"text": $MESSAGE}
         EOF

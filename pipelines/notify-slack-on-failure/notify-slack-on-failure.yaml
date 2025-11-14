@@ -26,6 +26,10 @@ spec:
     - name: taskGitRevision
       type: string
       description: The revision in the taskGitUrl repo to be used
+    - name: conditionType
+      type: string
+      description: The Release status condition type to examine to determine if the release failed
+      default: ManagedPipelineProcessed
   tasks:
     - name: notify-slack-on-failure
       taskRef:
@@ -44,3 +48,5 @@ spec:
           value: $(params.secretKeyName)
         - name: release
           value: $(params.release)
+        - name: conditionType
+          value: $(params.conditionType)
