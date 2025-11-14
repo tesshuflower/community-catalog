@@ -68,7 +68,7 @@ spec:
           MESSAGE=$(jq -r '.message' <<< "$RELEASECONDITIONS" | awk NF)
 
           # need 3 back-ticks around message for code-block
-          MESSAGE=$(echo -n "Release $RELEASE_NAMESPACE/$RELEASE_NAME failed - condition $CONDITIONTYPE: \`\`\`$MESSAGE\`\`\`" | jq -Rsa)
+          MESSAGE=$(echo -n "Release `$RELEASE_NAMESPACE/$RELEASE_NAME` failed.\nMessage from condition `$CONDITIONTYPE`: \`\`\`$MESSAGE\`\`\`" | jq -Rsa)
 
           cat > /tmp/payload.json << EOF
         {"text": $MESSAGE}
